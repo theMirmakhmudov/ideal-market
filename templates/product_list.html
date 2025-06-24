@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+
+{% block title %}Mahsulotlar - POS Tizimi{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <h1>📦 Mahsulotlar ro'yxati</h1>
+    <div>
+        <a href="{% url 'add_category' %}" class="btn btn-warning">Kategoriya qo'shish</a>
+        <a href="{% url 'add_product' %}" class="btn btn-success">Yangi mahsulot</a>
+    </div>
+</div>
+
+<div class="card">
+    <form method="get" style="display: flex; gap: 1rem; margin-bottom: 2rem;">
+        <input type="text" name="search" placeholder="Mahsulot nomi yoki shtrix kod..." 
+               value="{{ search_query }}" class="form-control" style="flex: 1;">
+        
+        <select name="category" class="form-control" style="width: 200px;">
+            <option value="">Barcha kategoriyalar</option>
+            {% for category in categories %}
+                <option value="{{ category.id }}" {% if selected_category == category.id|stringformat:"s" %}selected{% endif %}>
+                    {{ category.name }}
+                </option>
+            {% endfor %}
+        </select>
+        
+        <button type="submit" class="btn btn-primary">Qidirish</button>
+    </form>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Shtrix kod</th>
+                <th>Nomi</th>
+                <th>Kategoriya</th>
+                <th>Olingan narxi</th>
+                <th>Sotish narxi</th>
+                <th>Miqdori</th>
+                <th>Yaroqlilik</th>
+                <th>Amallar</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for product in products %}
+            <tr {% if product.is_expired %}style="background-color: #ffebee;"{% elif product.stock_quantity < 10 %}style="background-color: #fff3e0;"{% endif %}>
+                <td>{{ product.barcode }}</td>
+                <td>{{ product.name }}</td>
+                <td>{{ product.category.name }}</td>
+                <td>{{ product.purchase_price|floatformat:0 }} so'm</td>
+                <td>{{ product.selling_price|floatformat:0 }} so'm</td>
+                <td>
+                    {{ product.stock_quantity }} {{ product.get_unit_display }}
+                    {% if product.stock_quantity < 10 %}
+                        <span style="color: #f39c12;">⚠️</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {{ product.expiry_date }}
+                    {% if product.is_expired %}
+                        <span style="color: #e74c3c;">❌</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{% url 'edit_product' product.id %}" class="btn btn-warning" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">Tahrirlash</a>
+                    <form method="post" action="{% url 'delete_product' product.id %}" style="display: inline;" 
+                          onsubmit="return confirm('Rostdan ham o\'chirmoqchimisiz?')">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">O'chirish</button>
+                    </form>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" style="text-align: center; color: #666;">Mahsulot topilmadi</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

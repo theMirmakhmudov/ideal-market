@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+
+{% block title %}Statistika - POS Tizimi{% endblock %}
+
+{% block content %}
+<h1>📈 Savdo statistikasi</h1>
+
+<div class="grid grid-4">
+    <div class="card">
+        <h3>💰 Bugungi daromad</h3>
+        <p style="font-size: 2rem; font-weight: bold; color: #27ae60;">{{ today_revenue|floatformat:0 }} so'm</p>
+        <p style="color: #666;">{{ today_sales_count }} ta savdo</p>
+    </div>
+    
+    <div class="card">
+        <h3>📅 Haftalik daromad</h3>
+        <p style="font-size: 2rem; font-weight: bold; color: #667eea;">{{ week_revenue|floatformat:0 }} so'm</p>
+    </div>
+    
+    <div class="card">
+        <h3>📊 Oylik daromad</h3>
+        <p style="font-size: 2rem; font-weight: bold; color: #f39c12;">{{ month_revenue|floatformat:0 }} so'm</p>
+    </div>
+    
+    <div class="card">
+        <h3>⚠️ Kam qolgan mahsulotlar</h3>
+        <p style="font-size: 2rem; font-weight: bold; color: #e74c3c;">{{ low_stock_products.count }}</p>
+    </div>
+</div>
+
+<div class="grid grid-2">
+    <div class="card">
+        <h3>🏆 Eng ko'p sotiladigan mahsulotlar</h3>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Mahsulot</th>
+                    <th>Sotildi</th>
+                    <th>Daromad</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in top_products %}
+                <tr>
+                    <td>{{ item.product__name }}</td>
+                    <td>{{ item.total_sold }}</td>
+                    <td>{{ item.total_revenue|floatformat:0 }} so'm</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3" style="text-align: center;">Ma'lumot yo'q</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="card">
+        <h3>⚠️ Diqqat talab qiluvchi mahsulotlar</h3>
+        
+        <h4 style="color: #f39c12; margin-top: 1rem;">Kam qolgan mahsulotlar:</h4>
+        <div style="max-height: 200px; overflow-y: auto;">
+            {% for product in low_stock_products %}
+            <div style="padding: 0.5rem; border-bottom: 1px solid #eee;">
+                <strong>{{ product.name }}</strong> - {{ product.stock_quantity }} {{ product.get_unit_display }}
+            </div>
+            {% empty %}
+            <p style="color: #666;">Hammasi yetarli miqdorda</p>
+            {% endfor %}
+        </div>
+        
+        <h4 style="color: #e74c3c; margin-top: 1rem;">Muddati o'tgan mahsulotlar:</h4>
+        <div style="max-height: 200px; overflow-y: auto;">
+            {% for product in expired_products %}
+            <div style="padding: 0.5rem; border-bottom: 1px solid #eee;">
+                <strong>{{ product.name }}</strong> - {{ product.expiry_date }}
+            </div>
+            {% empty %}
+            <p style="color: #666;">Muddati o'tgan mahsulot yo'q</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h3>📈 Kunlik savdo grafigi (oxirgi 30 kun)</h3>
+    <canvas id="salesChart" width="400" height="200"></canvas>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Grafik ma'lumotlari
+    const dailySalesData = {{ daily_sales|safe }};
+    
+    // Grafik yaratish
+    const ctx = document.getElementById('salesChart').getContext('2d');
+    const salesChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: dailySalesData.map(item => {
+                const date = new Date(item.date);
+                return date.toLocaleDateString('uz-UZ', { month: 'short', day: 'numeric' });
+            }),
+            datasets: [{
+                label: 'Kunlik daromad (so\'m)',
+                data: dailySalesData.map(item => item.revenue),
+                borderColor: '#667eea',
+                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Kunlik savdo dinamikasi'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return new Intl.NumberFormat('uz-UZ').format(value) + ' so\'m';
+                        }
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

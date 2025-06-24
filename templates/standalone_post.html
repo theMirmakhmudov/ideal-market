@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Market POS Tizimi</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+            height: calc(100vh - 140px);
+        }
+
+        .products-section {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            overflow-y: auto;
+        }
+
+        .search-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .barcode-input {
+            grid-column: span 2;
+            padding: 15px;
+            border: 3px solid #667eea;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            background: #f8f9ff;
+            margin-bottom: 10px;
+        }
+
+        .search-bar {
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .search-bar:focus, .barcode-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .product-card {
+            border: 2px solid #eee;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f9f9f9;
+        }
+
+        .product-card:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .product-card.selected {
+            border-color: #667eea;
+            background: #e8f0fe;
+        }
+
+        .product-card.out-of-stock {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .product-name {
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .product-price {
+            color: #667eea;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .product-stock {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        .product-barcode {
+            color: #999;
+            font-size: 0.8em;
+            font-family: monospace;
+            margin-top: 5px;
+        }
+
+        .cart-section {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .cart-header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .cart-items {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            max-height: 300px;
+        }
+
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            margin-bottom: 10px;
+        }
+
+        .cart-item-info {
+            flex: 1;
+        }
+
+        .cart-item-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .cart-item-price {
+            color: #667eea;
+        }
+
+        .quantity-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .quantity-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .quantity-btn:hover {
+            background: #5a6fd8;
+        }
+
+        .quantity-input {
+            width: 50px;
+            text-align: center;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 5px;
+            font-weight: bold;
+        }
+
+        .quantity {
+            font-weight: bold;
+            min-width: 30px;
+            text-align: center;
+        }
+
+        .remove-btn {
+            background: #ff4757;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        .remove-btn:hover {
+            background: #ff3838;
+        }
+
+        .cart-total {
+            border-top: 2px solid #eee;
+            padding-top: 15px;
+            margin-bottom: 20px;
+        }
+
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .total-final {
+            font-weight: bold;
+            font-size: 1.3em;
+            color: #667eea;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+        }
+
+        .payment-section {
+            margin-bottom: 20px;
+        }
+
+        .payment-methods {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .payment-btn {
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .payment-btn.active {
+            border-color: #667eea;
+            background: #e8f0fe;
+        }
+
+        .cash-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .change-amount {
+            text-align: center;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #27ae60;
+            margin-bottom: 15px;
+        }
+
+        .checkout-btn {
+            width: 100%;
+            padding: 15px;
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .checkout-btn:hover {
+            background: #219a52;
+        }
+
+        .checkout-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .clear-cart-btn {
+            width: 100%;
+            padding: 10px;
+            background: #ff4757;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .clear-cart-btn:hover {
+            background: #ff3838;
+        }
+
+        .receipt {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .receipt-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 400px;
+            width: 90%;
+            max-height: 80%;
+            overflow-y: auto;
+        }
+
+        .receipt-header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 15px;
+        }
+
+        .receipt-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding: 5px 0;
+        }
+
+        .receipt-total {
+            border-top: 2px solid #eee;
+            padding-top: 15px;
+            margin-top: 15px;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        .receipt-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .receipt-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .print-btn {
+            background: #667eea;
+            color: white;
+        }
+
+        .close-btn {
+            background: #ddd;
+            color: #333;
+        }
+
+        .message-toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            z-index: 1001;
+            animation: slideIn 0.3s ease-out;
+            max-width: 300px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .message-toast.success {
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #c3e6cb;
+        }
+
+        .message-toast.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #f5c6cb;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+
+            .products-grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            }
+
+            .search-controls {
+                grid-template-columns: 1fr;
+            }
+
+            .barcode-input {
+                grid-column: span 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏪 Market POS Tizimi</h1>
+            <p>Sotuv va hisob-kitob tizimi</p>
+        </div>
+
+        <div class="main-content">
+            <div class="products-section">
+                <div class="search-controls">
+                    <input type="text" class="barcode-input" id="barcodeInput" placeholder="🔍 Shtrix kod kiriting va Enter bosing..." autocomplete="off">
+                    <input type="text" class="search-bar" id="searchBar" placeholder="Mahsulot qidirish...">
+                    <select class="search-bar" id="categoryFilter">
+                        <option value="">Barcha kategoriyalar</option>
+                        <option value="oziq-ovqat">Oziq-ovqat</option>
+                        <option value="ichimlik">Ichimliklar</option>
+                        <option value="uy-ro'zg'or">Uy-ro'zg'or</option>
+                        <option value="maktab">Maktab buyumlari</option>
+                    </select>
+                </div>
+                <div class="products-grid" id="productsGrid">
+                    <!-- Mahsulotlar bu yerda ko'rsatiladi -->
+                </div>
+            </div>
+
+            <div class="cart-section">
+                <div class="cart-header">
+                    <h2>🛒 Savat</h2>
+                </div>
+
+                <div class="cart-items" id="cartItems">
+                    <p style="text-align: center; color: #666; margin-top: 50px;">Savat bo'sh</p>
+                </div>
+
+                <div class="cart-total" id="cartTotal" style="display: none;">
+                    <div class="total-row">
+                        <span>Jami:</span>
+                        <span id="subtotal">0 so'm</span>
+                    </div>
+                    <div class="total-row">
+                        <span>Soliq (12%):</span>
+                        <span id="tax">0 so'm</span>
+                    </div>
+                    <div class="total-row total-final">
+                        <span>Umumiy:</span>
+                        <span id="total">0 so'm</span>
+                    </div>
+                </div>
+
+                <div class="payment-section" id="paymentSection" style="display: none;">
+                    <h3 style="margin-bottom: 15px;">To'lov usuli:</h3>
+                    <div class="payment-methods">
+                        <button class="payment-btn active" data-method="cash">💵 Naqd</button>
+                        <button class="payment-btn" data-method="card">💳 Karta</button>
+                    </div>
+
+                    <div id="cashPayment">
+                        <input type="number" class="cash-input" id="cashAmount" placeholder="Berilgan pul miqdori">
+                        <div class="change-amount" id="changeAmount"></div>
+                    </div>
+                </div>
+
+                <button class="checkout-btn" id="checkoutBtn" disabled>To'lash</button>
+                <button class="clear-cart-btn" id="clearCartBtn">Savatni tozalash</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chek modal -->
+    <div class="receipt" id="receiptModal">
+        <div class="receipt-content">
+            <div class="receipt-header">
+                <h2>🧾 CHEK</h2>
+                <p id="receiptDate"></p>
+                <p>Chek #<span id="receiptNumber"></span></p>
+            </div>
+            <div id="receiptItems"></div>
+            <div class="receipt-total">
+                <div class="receipt-item">
+                    <span>Jami:</span>
+                    <span id="receiptSubtotal"></span>
+                </div>
+                <div class="receipt-item">
+                    <span>Soliq (12%):</span>
+                    <span id="receiptTax"></span>
+                </div>
+                <div class="receipt-item" style="font-size: 1.3em; border-top: 1px solid #eee; padding-top: 10px;">
+                    <span>UMUMIY:</span>
+                    <span id="receiptTotal"></span>
+                </div>
+                <div class="receipt-item">
+                    <span>To'lov:</span>
+                    <span id="receiptPayment"></span>
+                </div>
+                <div class="receipt-item">
+                    <span>Qaytim:</span>
+                    <span id="receiptChange"></span>
+                </div>
+            </div>
+            <div class="receipt-buttons">
+                <button class="receipt-btn print-btn" onclick="printReceipt()">Chop etish</button>
+                <button class="receipt-btn close-btn" onclick="closeReceipt()">Yopish</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global o'zgaruvchilar
+        let products = [];
+        let cart = [];
+        let currentPaymentMethod = 'cash';
+        let receiptCounter = 1;
+
+        // Sahifa yuklanganda
+        document.addEventListener('DOMContentLoaded', function() {
+            loadProducts();
+            setupEventListeners();
+            focusBarcodeInput();
+        });
+
+        // Mahsulotlarni serverdan yuklash
+        async function loadProducts() {
+            try {
+                const response = await fetch('/api/products/');
+                const data = await response.json();
+                products = data.products;
+                displayProducts();
+            } catch (error) {
+                console.error('Mahsulotlarni yuklashda xatolik:', error);
+                // Fallback ma'lumotlar
+                products = [
+                    { id: 1, name: "Non", price: 2000, stock: 50, category: "oziq-ovqat", barcode: "1001" },
+                    { id: 2, name: "Sut", price: 8000, stock: 30, category: "oziq-ovqat", barcode: "1002" },
+                    { id: 3, name: "Tuxum", price: 15000, stock: 25, category: "oziq-ovqat", barcode: "1003" },
+                    { id: 4, name: "Guruch", price: 12000, stock: 40, category: "oziq-ovqat", barcode: "1004" },
+                    { id: 5, name: "Makaron", price: 7000, stock: 35, category: "oziq-ovqat", barcode: "1005" },
+                    { id: 6, name: "Coca Cola", price: 6000, stock: 60, category: "ichimlik", barcode: "2001" },
+                    { id: 7, name: "Pepsi", price: 5500, stock: 45, category: "ichimlik", barcode: "2002" },
+                    { id: 8, name: "Suv", price: 1500, stock: 100, category: "ichimlik", barcode: "2003" },
+                    { id: 9, name: "Choy", price: 25000, stock: 20, category: "oziq-ovqat", barcode: "1006" },
+                    { id: 10, name: "Qahva", price: 35000, stock: 15, category: "oziq-ovqat", barcode: "1007" }
+                ];
+                displayProducts();
+            }
+        }
+
+        // Barcode input maydoniga fokus berish
+        function focusBarcodeInput() {
+            document.getElementById('barcodeInput').focus();
+        }
+
+        // Mahsulotlarni ko'rsatish
+        function displayProducts(productsToShow = products) {
+            const productsGrid = document.getElementById('productsGrid');
+            productsGrid.innerHTML = '';
+
+            productsToShow.forEach(product => {
+                const productCard = document.createElement('div');
+                productCard.className = `product-card ${product.stock <= 0 ? 'out-of-stock' : ''}`;
+                productCard.onclick = () => {
+                    if (product.stock > 0) {
+                        addToCart(product);
+                    }
+                };
+
+                productCard.innerHTML = `
+                    <div class="product-name">${product.name}</div>
+                    <div class="product-price">${formatPrice(product.price)}</div>
+                    <div class="product-stock">Omborda: ${product.stock} ${product.unit || 'dona'}</div>
+                    <div class="product-barcode">${product.barcode}</div>
+                `;
+
+                productsGrid.appendChild(productCard);
+            });
+        }
+
+        // Barcode orqali mahsulot qidirish
+        async function searchProductByBarcode(barcode) {
+            try {
+                const response = await fetch(`/api/search-barcode/?barcode=${barcode}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    addToCart(data.product);
+                    showMessage(`✅ ${data.product.name} savatga qo'shildi!`, 'success');
+                } else {
+                    showMessage(`❌ Shtrix kod "${barcode}" topilmadi!`, 'error');
+                }
+            } catch (error) {
+                // Offline rejim - local qidiruv
+                const product = products.find(p => p.barcode === barcode);
+                if (product && product.stock > 0) {
+                    addToCart(product);
+                    showMessage(`✅ ${product.name} savatga qo'shildi!`, 'success');
+                } else {
+                    showMessage(`❌ Shtrix kod "${barcode}" topilmadi!`, 'error');
+                }
+            }
+        }
+
+        // Savatga qo'shish
+        function addToCart(product) {
+            if (product.stock <= 0) {
+                showMessage('❌ Bu mahsulot tugagan!', 'error');
+                return;
+            }
+
+            const existingItem = cart.find(item => item.id === product.id);
+
+            if (existingItem) {
+                if (existingItem.quantity < product.stock) {
+                    existingItem.quantity++;
+                    showMessage(`✅ ${product.name} miqdori oshirildi!`, 'success');
+                } else {
+                    showMessage('❌ Omborda yetarli mahsulot yo\'q!', 'error');
+                    return;
+                }
+            } else {
+                cart.push({
+                    ...product,
+                    quantity: 1
+                });
+                showMessage(`✅ ${product.name} savatga qo'shildi!`, 'success');
+            }
+
+            updateCartDisplay();
+            focusBarcodeInput();
+        }
+
+        // Savatni yangilash
+        function updateCartDisplay() {
+            const cartItems = document.getElementById('cartItems');
+            const cartTotal = document.getElementById('cartTotal');
+            const paymentSection = document.getElementById('paymentSection');
+            const checkoutBtn = document.getElementById('checkoutBtn');
+
+            if (cart.length === 0) {
+                cartItems.innerHTML = '<p style="text-align: center; color: #666; margin-top: 50px;">Savat bo\'sh</p>';
+                cartTotal.style.display = 'none';
+                paymentSection.style.display = 'none';
+                checkoutBtn.disabled = true;
+                return;
+            }
+
+            // Savat elementlarini ko'rsatish
+            cartItems.innerHTML = '';
+            cart.forEach(item => {
+                const cartItem = document.createElement('div');
+                cartItem.className = 'cart-item';
+
+                cartItem.innerHTML = `
+                    <div class="cart-item-info">
+                        <div class="cart-item-name">${item.name}</div>
+                        <div class="cart-item-price">${formatPrice(item.price)} x ${item.quantity}</div>
+                    </div>
+                    <div class="quantity-controls">
+                        <button class="quantity-btn" onclick="decreaseQuantity(${item.id})">-</button>
+                        <input type="number" class="quantity-input" value="${item.quantity}"
+                               min="1" max="${item.stock}" onchange="updateQuantity(${item.id}, this.value)">
+                        <button class="quantity-btn" onclick="increaseQuantity(${item.id})">+</button>
+                        <button class="remove-btn" onclick="removeFromCart(${item.id})">×</button>
+                    </div>
+                `;
+
+                cartItems.appendChild(cartItem);
+            });
+
+            // Jami hisobini yangilash
+            const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const tax = Math.round(subtotal * 0.12);
+            const total = subtotal + tax;
+
+            document.getElementById('subtotal').textContent = formatPrice(subtotal);
+            document.getElementById('tax').textContent = formatPrice(tax);
+            document.getElementById('total').textContent = formatPrice(total);
+
+            cartTotal.style.display = 'block';
+            paymentSection.style.display = 'block';
+            checkoutBtn.disabled = false;
+
+            updatePaymentCalculation();
+        }
+
+        // Miqdorni oshirish
+        function increaseQuantity(productId) {
+            const item = cart.find(item => item.id === productId);
+            const product = products.find(p => p.id === productId);
+
+            if (item && item.quantity < product.stock) {
+                item.quantity++;
+                updateCartDisplay();
+            } else {
+                showMessage('❌ Omborda yetarli mahsulot yo\'q!', 'error');
+            }
+        }
+
+        // Miqdorni kamaytirish
+        function decreaseQuantity(productId) {
+            const item = cart.find(item => item.id === productId);
+
+            if (item && item.quantity > 1) {
+                item.quantity--;
+                updateCartDisplay();
+            }
+        }
+
+        // Miqdorni to'g'ridan-to'g'ri yangilash
+        function updateQuantity(productId, newQuantity) {
+            const item = cart.find(item => item.id === productId);
+            const product = products.find(p => p.id === productId);
+            const quantity = parseInt(newQuantity);
+
+            if (quantity < 1) {
+                showMessage('❌ Miqdor 1 dan kam bo\'lishi mumkin emas!', 'error');
+                updateCartDisplay();
+                return;
+            }
+
+            if (quantity > product.stock) {
+                showMessage('❌ Omborda yetarli mahsulot yo\'q!', 'error');
+                updateCartDisplay();
+                return;
+            }
+
+            if (item) {
+                item.quantity = quantity;
+                updateCartDisplay();
+            }
+        }
+
+        // Savatdan olib tashlash
+        function removeFromCart(productId) {
+            const item = cart.find(item => item.id === productId);
+            if (item && confirm(`"${item.name}" mahsulotini savatdan olib tashlaysizmi?`)) {
+                cart = cart.filter(item => item.id !== productId);
+                updateCartDisplay();
+                showMessage('✅ Mahsulot savatdan olib tashlandi!', 'success');
+            }
+        }
+
+        // Savatni tozalash
+        function clearCart() {
+            if (cart.length > 0 && confirm('Savatni tozalashni xohlaysizmi?')) {
+                cart = [];
+                updateCartDisplay();
+                showMessage('✅ Savat tozalandi!', 'success');
+                focusBarcodeInput();
+            }
+        }
+
+        // To'lov hisob-kitobini yangilash
+        function updatePaymentCalculation() {
+            const cashAmount = parseFloat(document.getElementById('cashAmount').value) || 0;
+            const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0) * 1.12;
+
+            if (currentPaymentMethod === 'cash' && cashAmount > 0) {
+                const change = cashAmount - total;
+                const changeElement = document.getElementById('changeAmount');
+
+                if (change >= 0) {
+                    changeElement.textContent = `Qaytim: ${formatPrice(change)}`;
+                    changeElement.style.color = '#27ae60';
+                } else {
+                    changeElement.textContent = `Yetmaydi: ${formatPrice(Math.abs(change))}`;
+                    changeElement.style.color = '#ff4757';
+                }
+            }
+        }
+
+        // To'lash
+        async function checkout() {
+            if (cart.length === 0) {
+                showMessage('❌ Savat bo\'sh!', 'error');
+                return;
+            }
+
+            const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const total = subtotal * 1.12;
+            let paymentAmount = total;
+            let changeAmount = 0;
+
+            if (currentPaymentMethod === 'cash') {
+                const cashAmount = parseFloat(document.getElementById('cashAmount').value) || 0;
+                if (cashAmount < total) {
+                    showMessage('❌ Yetarli pul kiritilmagan!', 'error');
+                    document.getElementById('cashAmount').focus();
+                    return;
+                }
+                paymentAmount = cashAmount;
+                changeAmount = cashAmount - total;
+            }
+
+            try {
+                // Serverga savdoni yuborish
+                const response = await fetch('/process-sale/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({
+                        cart_items: cart,
+                        payment_method: currentPaymentMethod,
+                        payment_amount: paymentAmount
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Ombor miqdorini yangilash
+                    cart.forEach(cartItem => {
+                        const product = products.find(p => p.id === cartItem.id);
+                        if (product) {
+                            product.stock -= cartItem.quantity;
+                        }
+                    });
+
+                    showReceipt(data);
+                    cart = [];
+                    updateCartDisplay();
+                    displayProducts();
+                    document.getElementById('cashAmount').value = '';
+                    showMessage('✅ Savdo muvaffaqiyatli yakunlandi!', 'success');
+                } else {
+                    showMessage(`❌ Xatolik: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                // Offline rejim
+                console.log('Offline rejim - local savdo');
+
+                // Ombor miqdorini yangilash
+                cart.forEach(cartItem => {
+                    const product = products.find(p => p.id === cartItem.id);
+                    if (product) {
+                        product.stock -= cartItem.quantity;
+                    }
+                });
+
+                const saleData = {
+                    sale_number: `S${Date.now()}`,
+                    total_amount: total,
+                    payment_amount: paymentAmount,
+                    change_amount: changeAmount,
+                    subtotal: subtotal,
+                    tax_amount: subtotal * 0.12
+                };
+
+                showReceipt(saleData);
+                cart = [];
+                updateCartDisplay();
+                displayProducts();
+                document.getElementById('cashAmount').value = '';
+                showMessage('✅ Savdo muvaffaqiyatli yakunlandi! (Offline)', 'success');
+            }
+        }
+
+        // Chekni ko'rsatish
+        function showReceipt(saleData) {
+            const modal = document.getElementById('receiptModal');
+            const subtotal = saleData.subtotal || cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const tax = saleData.tax_amount || Math.round(subtotal * 0.12);
+            const total = saleData.total_amount || subtotal + tax;
+
+            // Chek ma'lumotlarini to'ldirish
+            document.getElementById('receiptDate').textContent = new Date().toLocaleString('uz-UZ');
+            document.getElementById('receiptNumber').textContent = saleData.sale_number || receiptCounter.toString().padStart(4, '0');
+
+            // Chek elementlari
+            const receiptItems = document.getElementById('receiptItems');
+            receiptItems.innerHTML = '';
+
+            cart.forEach(item => {
+                const receiptItem = document.createElement('div');
+                receiptItem.className = 'receipt-item';
+                receiptItem.innerHTML = `
+                    <span>${item.name} x${item.quantity}</span>
+                    <span>${formatPrice(item.price * item.quantity)}</span>
+                `;
+                receiptItems.appendChild(receiptItem);
+            });
+
+            // Jami ma'lumotlar
+            document.getElementById('receiptSubtotal').textContent = formatPrice(subtotal);
+            document.getElementById('receiptTax').textContent = formatPrice(tax);
+            document.getElementById('receiptTotal').textContent = formatPrice(total);
+            document.getElementById('receiptPayment').textContent = formatPrice(saleData.payment_amount || total);
+            document.getElementById('receiptChange').textContent = formatPrice(saleData.change_amount || 0);
+
+            modal.style.display = 'flex';
+            receiptCounter++;
+        }
+
+        // Chekni yopish
+        function closeReceipt() {
+            document.getElementById('receiptModal').style.display = 'none';
+            focusBarcodeInput();
+        }
+
+        // Chekni chop etish
+        function printReceipt() {
+            window.print();
+        }
+
+        // Narxni formatlash
+        function formatPrice(price) {
+            return new Intl.NumberFormat('uz-UZ').format(Math.round(price)) + ' so\'m';
+        }
+
+        // Qidiruv
+        function searchProducts() {
+            const searchTerm = document.getElementById('searchBar').value.toLowerCase();
+            const categoryFilter = document.getElementById('categoryFilter').value;
+
+            const filteredProducts = products.filter(product => {
+                const matchesSearch = product.name.toLowerCase().includes(searchTerm) ||
+                                    product.barcode.toLowerCase().includes(searchTerm);
+                const matchesCategory = !categoryFilter || product.category === categoryFilter;
+                return matchesSearch && matchesCategory;
+            });
+
+            displayProducts(filteredProducts);
+        }
+
+        // Xabar ko'rsatish
+        function showMessage(message, type) {
+            // Eski xabarni olib tashlash
+            const existingMessage = document.querySelector('.message-toast');
+            if (existingMessage) {
+                existingMessage.remove();
+            }
+
+            // Yangi xabar yaratish
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message-toast ${type}`;
+            messageDiv.textContent = message;
+
+            document.body.appendChild(messageDiv);
+
+            // 3 soniyadan keyin xabarni olib tashlash
+            setTimeout(() => {
+                if (messageDiv && messageDiv.parentNode) {
+                    messageDiv.style.animation = 'slideIn 0.3s ease-out reverse';
+                    setTimeout(() => messageDiv.remove(), 300);
+                }
+            }, 3000);
+        }
+
+        // CSRF token olish
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // Event listenerlarni o'rnatish
+        function setupEventListeners() {
+            // Barcode input
+            document.getElementById('barcodeInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const barcode = this.value.trim();
+                    if (barcode) {
+                        searchProductByBarcode(barcode);
+                        this.value = '';
+                    }
+                }
+            });
+
+            // Qidiruv
+            document.getElementById('searchBar').addEventListener('input', searchProducts);
+            document.getElementById('categoryFilter').addEventListener('change', searchProducts);
+
+            // To'lov usuli
+            document.querySelectorAll('.payment-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.payment-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    currentPaymentMethod = this.dataset.method;
+
+                    const cashPayment = document.getElementById('cashPayment');
+                    if (currentPaymentMethod === 'cash') {
+                        cashPayment.style.display = 'block';
+                    } else {
+                        cashPayment.style.display = 'none';
+                    }
+                    updatePaymentCalculation();
+                });
+            });
+
+            // Naqd pul miqdori
+            document.getElementById('cashAmount').addEventListener('input', updatePaymentCalculation);
+
+            // To'lash tugmasi
+            document.getElementById('checkoutBtn').addEventListener('click', checkout);
+
+            // Savatni tozalash
+            document.getElementById('clearCartBtn').addEventListener('click', clearCart);
+
+            // Global klaviatura hodisalari
+            document.addEventListener('keydown', function(e) {
+                // Agar modal ochiq bo'lsa, hech narsa qilmaslik
+                if (document.getElementById('receiptModal').style.display === 'flex') {
+                    return;
+                }
+
+                // Agar boshqa input maydonida bo'lmasa, barcode input maydoniga fokus berish
+                if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'SELECT' && e.target.tagName !== 'TEXTAREA') {
+                    focusBarcodeInput();
+                }
+
+                // F1 - Savatni tozalash
+                if (e.key === 'F1') {
+                    e.preventDefault();
+                    clearCart();
+                }
+
+                // F2 - To'lash
+                if (e.key === 'F2') {
+                    e.preventDefault();
+                    if (!document.getElementById('checkoutBtn').disabled) {
+                        checkout();
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

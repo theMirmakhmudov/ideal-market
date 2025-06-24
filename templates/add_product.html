@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+
+{% block title %}Mahsulot qo'shish - POS Tizimi{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3>📦 Mahsulot qo'shish / Partiya qo'shish</h3>
+                    <p class="text-muted mb-0">Yangi mahsulot yaratish yoki mavjud mahsulotga yangi partiya qo'shish</p>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="barcode" class="form-label">Shtrix kod *</label>
+                                    <input type="text" class="form-control" id="barcode" name="barcode" required>
+                                    <div class="form-text">Agar mavjud mahsulot shtrix kodi kiritilsa, yangi partiya qo'shiladi</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">Mahsulot nomi *</label>
+                                    <input type="text" class="form-control" id="name" name="name" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="category" class="form-label">Kategoriya *</label>
+                                    <select class="form-select" id="category" name="category" required>
+                                        <option value="">Kategoriyani tanlang</option>
+                                        {% for category in categories %}
+                                            <option value="{{ category.id }}">{{ category.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="unit" class="form-label">O'lchov birligi *</label>
+                                    <select class="form-select" id="unit" name="unit" required>
+                                        <option value="piece">Dona</option>
+                                        <option value="kg">Kilogram</option>
+                                        <option value="liter">Litr</option>
+                                        <option value="meter">Metr</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="image" class="form-label">Mahsulot rasmi (ixtiyoriy)</label>
+                            <input type="file" class="form-control" id="image" name="image" accept="image/*">
+                            <div class="form-text">JPG, PNG, GIF formatlarida rasm yuklash mumkin</div>
+                        </div>
+
+                        <hr>
+                        <h5>📋 Partiya ma'lumotlari</h5>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="purchase_price" class="form-label">Sotib olish narxi *</label>
+                                    <input type="number" class="form-control" id="purchase_price" name="purchase_price" step="0.01" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="selling_price" class="form-label">Sotuv narxi *</label>
+                                    <input type="number" class="form-control" id="selling_price" name="selling_price" step="0.01" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="stock_quantity" class="form-label">Miqdor *</label>
+                                    <input type="number" class="form-control" id="stock_quantity" name="stock_quantity" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="arrival_date" class="form-label">Kelgan sana *</label>
+                                    <input type="date" class="form-control" id="arrival_date" name="arrival_date" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="expiry_date" class="form-label">Yaroqlilik muddati *</label>
+                                    <input type="date" class="form-control" id="expiry_date" name="expiry_date" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'product_list' %}" class="btn btn-secondary">
+                                ← Orqaga
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                💾 Saqlash
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Bugungi sanani default qilish
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('arrival_date').value = today;
+
+    // Yaroqlilik muddatini 1 yil keyingi qilish
+    const nextYear = new Date();
+    nextYear.setFullYear(nextYear.getFullYear() + 1);
+    document.getElementById('expiry_date').value = nextYear.toISOString().split('T')[0];
+});
+</script>
+{% endblock %}

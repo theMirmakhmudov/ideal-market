@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block title %}Kategoriya qo'shish - POS Tizimi{% endblock %}
+
+{% block content %}
+<h1>📂 Yangi kategoriya qo'shish</h1>
+
+<div class="card" style="max-width: 500px;">
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="name">Kategoriya nomi:</label>
+            <input type="text" id="name" name="name" class="form-control" required>
+        </div>
+        
+        <div style="margin-top: 2rem;">
+            <button type="submit" class="btn btn-success">Kategoriya qo'shish</button>
+            <a href="{% url 'product_list' %}" class="btn btn-primary">Bekor qilish</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

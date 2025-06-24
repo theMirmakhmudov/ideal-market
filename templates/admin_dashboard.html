@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Panel - POS Tizimi{% endblock %}
+
+{% block content %}
+<h1>📊 Admin Dashboard</h1>
+
+<div class="grid grid-4">
+    <div class="card">
+        <h3>📦 Jami mahsulotlar</h3>
+        <p style="font-size: 2rem; font-weight: bold; color: #667eea;">{{ total_products }}</p>
+    </div>
+    
+    <div class="card">
+        <h3>⚠️ Kam qolgan mahsulotlar</h3>
+        <p style="font-size: 2rem; font-weight: bold; color: #f39c12;">{{ low_stock_products }}</p>
+    </div>
+    
+    <div class="card">
+        <h3>❌ Muddati o'tgan</h3>
+        <p style="font-size: 2rem; font-weight: bold; color: #e74c3c;">{{ expired_products }}</p>
+    </div>
+    
+    <div class="card">
+        <h3>💰 Bugungi savdo</h3>
+        <p style="font-size: 2rem; font-weight: bold; color: #27ae60;">{{ today_sales|floatformat:0 }} so'm</p>
+    </div>
+</div>
+
+<div class="grid grid-3">
+    <div class="card">
+        <h3>📝 Mahsulotlar</h3>
+        <p>Mahsulotlarni boshqaring, yangi mahsulot qo'shing</p>
+        <a href="{% url 'product_list' %}" class="btn btn-primary">Mahsulotlar ro'yxati</a>
+    </div>
+    
+    <div class="card">
+        <h3>📈 Statistika</h3>
+        <p>Savdo hisobotlari va tahlillar</p>
+        <a href="{% url 'statistics' %}" class="btn btn-success">Statistikani ko'rish</a>
+    </div>
+    
+    <div class="card">
+        <h3>🛒 Kassa</h3>
+        <p>Kassir rejimida ishlash</p>
+        <a href="{% url 'cashier_dashboard' %}" class="btn btn-warning">Kassaga o'tish</a>
+    </div>
+</div>
+{% endblock %}
