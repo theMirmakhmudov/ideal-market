@@ -3,28 +3,63 @@
 {% block title %}Statistika - POS Tizimi{% endblock %}
 
 {% block content %}
-<h1>📈 Savdo statistikasi</h1>
+<style>
+.grid {
+    display: grid;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+.grid-4 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.grid-2 { grid-template-columns: 1fr 1fr; }
+.card {
+    background: #fff;
+    border-radius: 1.2rem;
+    box-shadow: 0 2px 10px rgba(100, 126, 234, 0.09);
+    padding: 1.7rem 1.4rem;
+    border: 1.5px solid #eaeaea;
+    transition: box-shadow 0.2s;
+}
+.card:hover { box-shadow: 0 6px 24px rgba(102,126,234,0.18); }
+h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: .6em; }
+.table {
+    width: 100%; border-collapse: collapse; margin-top: 1em; margin-bottom: .5em;
+}
+.table th, .table td {
+    border-bottom: 1px solid #f0f0f0; padding: .6em .5em; text-align: left;
+}
+.table th { background: #f5f7fa; font-size: 0.9em; }
+.amount { font-family: 'Courier New', monospace; letter-spacing: 0.5px; }
+@media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
+@media (max-width: 700px) { .grid-4 { grid-template-columns: 1fr; } .card { padding: 1em .6em; } }
+</style>
+
+<h1 style="font-weight:800; color:#343a40; margin-bottom:1.5rem; letter-spacing:0.5px;">📈 Savdo statistikasi</h1>
 
 <div class="grid grid-4">
     <div class="card">
         <h3>💰 Bugungi daromad</h3>
-        <p style="font-size: 2rem; font-weight: bold; color: #27ae60;">{{ today_revenue|floatformat:0 }} so'm</p>
+        <p style="font-size: 2rem; font-weight: bold; color: #27ae60;">
+            <span class="amount">{{ today_revenue|floatformat:0 }}</span> so'm
+        </p>
         <p style="color: #666;">{{ today_sales_count }} ta savdo</p>
     </div>
-    
     <div class="card">
         <h3>📅 Haftalik daromad</h3>
-        <p style="font-size: 2rem; font-weight: bold; color: #667eea;">{{ week_revenue|floatformat:0 }} so'm</p>
+        <p style="font-size: 2rem; font-weight: bold; color: #667eea;">
+            <span class="amount">{{ week_revenue|floatformat:0 }}</span> so'm
+        </p>
     </div>
-    
     <div class="card">
         <h3>📊 Oylik daromad</h3>
-        <p style="font-size: 2rem; font-weight: bold; color: #f39c12;">{{ month_revenue|floatformat:0 }} so'm</p>
+        <p style="font-size: 2rem; font-weight: bold; color: #f39c12;">
+            <span class="amount">{{ month_revenue|floatformat:0 }}</span> so'm
+        </p>
     </div>
-    
     <div class="card">
         <h3>⚠️ Kam qolgan mahsulotlar</h3>
-        <p style="font-size: 2rem; font-weight: bold; color: #e74c3c;">{{ low_stock_products.count }}</p>
+        <p style="font-size: 2rem; font-weight: bold; color: #e74c3c;">
+            {{ low_stock_products.count }}
+        </p>
     </div>
 </div>
 
@@ -43,8 +78,8 @@
                 {% for item in top_products %}
                 <tr>
                     <td>{{ item.product__name }}</td>
-                    <td>{{ item.total_sold }}</td>
-                    <td>{{ item.total_revenue|floatformat:0 }} so'm</td>
+                    <td><span class="amount">{{ item.total_sold }}</span></td>
+                    <td><span class="amount">{{ item.total_revenue|floatformat:0 }}</span> so'm</td>
                 </tr>
                 {% empty %}
                 <tr>
@@ -54,10 +89,8 @@
             </tbody>
         </table>
     </div>
-    
     <div class="card">
         <h3>⚠️ Diqqat talab qiluvchi mahsulotlar</h3>
-        
         <h4 style="color: #f39c12; margin-top: 1rem;">Kam qolgan mahsulotlar:</h4>
         <div style="max-height: 200px; overflow-y: auto;">
             {% for product in low_stock_products %}
@@ -68,7 +101,6 @@
             <p style="color: #666;">Hammasi yetarli miqdorda</p>
             {% endfor %}
         </div>
-        
         <h4 style="color: #e74c3c; margin-top: 1rem;">Muddati o'tgan mahsulotlar:</h4>
         <div style="max-height: 200px; overflow-y: auto;">
             {% for product in expired_products %}
@@ -89,10 +121,28 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    // Grafik ma'lumotlari
+function formatSum(str) {
+    if(!str) return '';
+    let n = parseFloat(str.toString().replace(/[^\d.-]/g, ''));
+    if (isNaN(n)) return str;
+    return n.toLocaleString('en-US');
+}
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.amount').forEach(el => {
+        // faqat raqam qismi uchun (agar " so'm" bo'lsa, ajratiladi)
+        let t = el.textContent.replace(" so'm", "").trim();
+        el.textContent = formatSum(t);
+    });
+
+    // Jadvalda va boshqa joyda " so'm" ni joyida qoldirish uchun
+    document.querySelectorAll('.amount').forEach(el => {
+        if(el.nextSibling && el.nextSibling.textContent && el.nextSibling.textContent.includes("so'm")) {
+            el.nextSibling.textContent = " so'm";
+        }
+    });
+
+    // ChartJS uchun original kod
     const dailySalesData = {{ daily_sales|safe }};
-    
-    // Grafik yaratish
     const ctx = document.getElementById('salesChart').getContext('2d');
     const salesChart = new Chart(ctx, {
         type: 'line',
@@ -102,7 +152,7 @@
                 return date.toLocaleDateString('uz-UZ', { month: 'short', day: 'numeric' });
             }),
             datasets: [{
-                label: 'Kunlik daromad (so\'m)',
+                label: "Kunlik daromad (so'm)",
                 data: dailySalesData.map(item => item.revenue),
                 borderColor: '#667eea',
                 backgroundColor: 'rgba(102, 126, 234, 0.1)',
@@ -114,22 +164,20 @@
         options: {
             responsive: true,
             plugins: {
-                title: {
-                    display: true,
-                    text: 'Kunlik savdo dinamikasi'
-                }
+                title: { display: true, text: 'Kunlik savdo dinamikasi' }
             },
             scales: {
                 y: {
                     beginAtZero: true,
                     ticks: {
                         callback: function(value) {
-                            return new Intl.NumberFormat('uz-UZ').format(value) + ' so\'m';
+                            return new Intl.NumberFormat('uz-UZ').format(value) + " so'm";
                         }
                     }
                 }
             }
         }
     });
+});
 </script>
 {% endblock %}

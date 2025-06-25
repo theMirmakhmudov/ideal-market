@@ -959,6 +959,37 @@ body {
         font-size: 1.1rem;
     }
 }
+
+    @media print {
+    body * {
+        visibility: hidden !important;
+    }
+    #receiptModal,
+    #receiptModal * {
+        visibility: visible !important;
+    }
+    #receiptModal {
+        position: absolute !important;
+        left: 0; top: 0;
+        width: 100vw !important;
+        height: auto !important;
+        background: white !important;
+        z-index: 10000 !important;
+        box-shadow: none !important;
+        display: block !important;
+        padding: 0 !important;
+    }
+    .receipt-content {
+        box-shadow: none !important;
+        margin: 0 auto !important;
+        max-width: 500px !important;
+        border-radius: 0 !important;
+        padding: 0 !important;
+    }
+    .receipt-buttons, .receipt-btn {
+        display: none !important;
+    }
+}
 </style>
 
 <div class="container-fluid">

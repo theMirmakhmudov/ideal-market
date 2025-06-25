@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.http import JsonResponse
-from django.db.models import Sum, Count, Q
+from django.db.models import Sum, Count, Q, F
 from django.utils import timezone
 from datetime import datetime, timedelta
 import json
@@ -43,22 +43,72 @@ def dashboard(request):
 @login_required
 @user_passes_test(is_admin)
 def admin_dashboard(request):
+    """Yaxshilangan admin dashboard"""
+    today = timezone.now().date()
+
+    # Jami mahsulotlar soni
     total_products = Product.objects.count()
-    low_stock_products = Product.objects.filter(
-        batches__remaining_quantity__lt=10
-    ).distinct().count()
-    expired_products = ProductBatch.objects.filter(
-        expiry_date__lt=timezone.now().date(),
+
+    # Kam qolgan mahsulotlar (har bir mahsulotning jami qolgan miqdori 10 dan kam)
+    low_stock_products = []
+    all_products = Product.objects.all()
+
+    for product in all_products:
+        total_remaining = product.batches.filter(
+            remaining_quantity__gt=0,
+            expiry_date__gte=today
+        ).aggregate(total=Sum('remaining_quantity'))['total'] or 0
+
+        if total_remaining > 0 and total_remaining < 10:
+            low_stock_products.append(product)
+
+    low_stock_count = len(low_stock_products)
+
+    # Muddati o'tgan mahsulotlar (batch lar soni)
+    expired_batches = ProductBatch.objects.filter(
+        expiry_date__lt=today,
+        remaining_quantity__gt=0
+    )
+    expired_products_count = expired_batches.count()
+
+    # Muddati o'tgan mahsulotlar ro'yxati (unique products)
+    expired_product_ids = expired_batches.values_list('product_id', flat=True).distinct()
+    expired_products_list = Product.objects.filter(id__in=expired_product_ids)
+
+    # Bugungi savdo
+    today_sales = Sale.objects.filter(
+        created_at__date=today
+    ).aggregate(total=Sum('total_amount'))['total'] or 0
+
+    # Yaqinda tugaydigan mahsulotlar (7 kun ichida)
+    expiring_soon_count = ProductBatch.objects.filter(
+        expiry_date__gte=today,
+        expiry_date__lte=today + timedelta(days=7),
         remaining_quantity__gt=0
     ).count()
-    today_sales = Sale.objects.filter(created_at__date=timezone.now().date()).aggregate(
-        total=Sum('total_amount'))['total'] or 0
+
+    # Bu hafta savdo
+    week_start = today - timedelta(days=7)
+    week_sales = Sale.objects.filter(
+        created_at__date__gte=week_start
+    ).aggregate(total=Sum('total_amount'))['total'] or 0
+
+    # Bu oy savdo
+    month_start = today.replace(day=1)
+    month_sales = Sale.objects.filter(
+        created_at__date__gte=month_start
+    ).aggregate(total=Sum('total_amount'))['total'] or 0
 
     context = {
         'total_products': total_products,
-        'low_stock_products': low_stock_products,
-        'expired_products': expired_products,
+        'low_stock_products': low_stock_count,
+        'low_stock_products_list': low_stock_products[:5],  # Faqat 5 tasini ko'rsatish
+        'expired_products': expired_products_count,
+        'expired_products_list': expired_products_list[:5],  # Faqat 5 tasini ko'rsatish
         'today_sales': today_sales,
+        'week_sales': week_sales,
+        'month_sales': month_sales,
+        'expiring_soon_count': expiring_soon_count,
     }
     return render(request, 'admin_dashboard.html', context)
 
@@ -533,36 +583,95 @@ def process_return(request):
 @login_required
 @user_passes_test(is_admin)
 def statistics(request):
-    # Bugungi statistika
+    """Yaxshilangan statistika sahifasi"""
     today = timezone.now().date()
-    today_sales = Sale.objects.filter(created_at__date=today)
-    today_revenue = today_sales.aggregate(total=Sum('total_amount'))['total'] or 0
-    today_sales_count = today_sales.count()
+
+    # Asosiy statistikalar
+    total_products = Product.objects.count()
+
+    # Muddati o'tgan mahsulotlar (batafsil ma'lumot bilan)
+    expired_batches = ProductBatch.objects.filter(
+        expiry_date__lt=today,
+        remaining_quantity__gt=0
+    ).select_related('product')
+
+    expired_products = []
+    for batch in expired_batches:
+        days_expired = (today - batch.expiry_date).days
+        loss_amount = float(batch.purchase_price) * batch.remaining_quantity
+
+        expired_products.append({
+            'name': batch.product.name,
+            'expiry_date': batch.expiry_date,
+            'days_expired': days_expired,
+            'stock_quantity': batch.remaining_quantity,
+            'loss_amount': loss_amount,
+            'batch_number': batch.batch_number,
+            'unit': batch.product.get_unit_display()
+        })
+
+    # Yaqinda tugaydigan mahsulotlar (7 kun ichida)
+    expiring_soon_count = ProductBatch.objects.filter(
+        expiry_date__gte=today,
+        expiry_date__lte=today + timedelta(days=7),
+        remaining_quantity__gt=0
+    ).count()
+
+    # Kam qolgan mahsulotlar (10 dan kam)
+    low_stock_products = Product.objects.filter(
+        batches__remaining_quantity__lt=10,
+        batches__remaining_quantity__gt=0
+    ).distinct()
+    low_stock_count = low_stock_products.count()
+
+    # Jami inventar qiymati
+    total_inventory_value = ProductBatch.objects.filter(
+        remaining_quantity__gt=0
+    ).aggregate(
+        total=Sum(F('purchase_price') * F('remaining_quantity'))
+    )['total'] or 0
+
+    # Kategoriyalar statistikasi
+    category_stats = Category.objects.annotate(
+        count=Count('product')
+    ).order_by('-count')
+
+    # Bugungi sotuv
+    today_sales = Sale.objects.filter(
+        created_at__date=today
+    ).aggregate(total=Sum('total_amount'))['total'] or 0
+
+    # Oylik daromad
+    this_month = today.replace(day=1)
+    monthly_revenue = Sale.objects.filter(
+        created_at__date__gte=this_month
+    ).aggregate(total=Sum('total_amount'))['total'] or 0
+
+    # Yangi mahsulotlar bu oy
+    new_products_this_month = Product.objects.filter(
+        created_at__date__gte=this_month
+    ).count()
+
+    # Eng ko'p sotiladigan mahsulotlar
+    top_selling_products = SaleItem.objects.values('product__name').annotate(
+        sold_quantity=Sum('quantity')
+    ).order_by('-sold_quantity')[:5]
 
     # Haftalik statistika
     week_start = today - timedelta(days=7)
     week_sales = Sale.objects.filter(created_at__date__gte=week_start)
     week_revenue = week_sales.aggregate(total=Sum('total_amount'))['total'] or 0
 
-    # Oylik statistika
-    month_start = today.replace(day=1)
-    month_sales = Sale.objects.filter(created_at__date__gte=month_start)
-    month_revenue = month_sales.aggregate(total=Sum('total_amount'))['total'] or 0
+    # Sotuv o'sishi (haftalar orasidagi farq)
+    prev_week_start = week_start - timedelta(days=7)
+    prev_week_revenue = Sale.objects.filter(
+        created_at__date__gte=prev_week_start,
+        created_at__date__lt=week_start
+    ).aggregate(total=Sum('total_amount'))['total'] or 0
 
-    # Eng ko'p sotiladigan mahsulotlar
-    top_products = SaleItem.objects.values('product__name').annotate(
-        total_sold=Sum('quantity'),
-        total_revenue=Sum('total_price')
-    ).order_by('-total_sold')[:10]
-
-    # Ombor holati
-    low_stock_products = Product.objects.filter(
-        batches__remaining_quantity__lt=10
-    ).distinct()
-    expired_batches = ProductBatch.objects.filter(
-        expiry_date__lt=today,
-        remaining_quantity__gt=0
-    )
+    sales_growth = 0
+    if prev_week_revenue > 0:
+        sales_growth = round(((week_revenue - prev_week_revenue) / prev_week_revenue) * 100, 1)
 
     # Kunlik savdo grafigi uchun ma'lumotlar (oxirgi 30 kun)
     daily_sales = []
@@ -577,14 +686,38 @@ def statistics(request):
     daily_sales.reverse()
 
     context = {
-        'today_revenue': today_revenue,
-        'today_sales_count': today_sales_count,
+        # Asosiy ko'rsatkichlar
+        'total_products': total_products,
+        'expired_products': expired_products,
+        'expired_products_count': len(expired_products),
+        'expiring_soon_count': expiring_soon_count,
+        'low_stock_count': low_stock_count,
+        'total_inventory_value': total_inventory_value,
+
+        # Sotuv statistikalari
+        'today_sales': today_sales,
+        'monthly_revenue': monthly_revenue,
         'week_revenue': week_revenue,
-        'month_revenue': month_revenue,
-        'top_products': top_products,
+        'sales_growth': sales_growth,
+        'new_products_this_month': new_products_this_month,
+
+        # Qo'shimcha ma'lumotlar
+        'category_stats': category_stats,
+        'top_selling_products': top_selling_products,
         'low_stock_products': low_stock_products,
-        'expired_batches': expired_batches,
+
+        # Grafik uchun ma'lumotlar
         'daily_sales': json.dumps(daily_sales),
+
+        # Eski ma'lumotlar (backward compatibility)
+        'today_revenue': today_sales,
+        'today_sales_count': Sale.objects.filter(created_at__date=today).count(),
+        'month_revenue': monthly_revenue,
+        'top_products': SaleItem.objects.values('product__name').annotate(
+            total_sold=Sum('quantity'),
+            total_revenue=Sum('total_price')
+        ).order_by('-total_sold')[:10],
+        'expired_batches': expired_batches,
     }
 
     return render(request, 'statistics.html', context)

@@ -1,112 +1,172 @@
 {% extends 'base.html' %}
-
-{% block title %}Mahsulot qo'shish - POS Tizimi{% endblock %}
-
+{% block title %}Mahsulot yoki Partiya qo'shish{% endblock %}
 {% block content %}
-<div class="container mt-4">
+
+<style>
+    .field-card {
+        border: 1.5px solid #e2e8f0;
+        border-radius: 1.25rem;
+        background: #f8fafc;
+        box-shadow: 0 1px 6px rgba(0,0,0,0.04);
+        padding: 1.1rem 1.3rem;
+        margin-bottom: 1.2rem;
+        transition: box-shadow 0.2s, border-color 0.2s;
+        position: relative;
+    }
+    .field-card:focus-within, .field-card:hover {
+        border-color: #4f8cff;
+        box-shadow: 0 4px 14px rgba(79,140,255,0.10);
+        background: #f1f5ff;
+    }
+    .field-label {
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 0.33rem;
+        display: flex;
+        align-items: center;
+        gap: 0.4em;
+    }
+    .field-icon {
+        color: #4f8cff;
+        font-size: 1.2em;
+        margin-right: 0.1em;
+    }
+    .field-desc {
+        font-size: 0.93em;
+        color: #64748b;
+        margin-top: 0.11rem;
+    }
+    .img-card-preview {
+        max-width: 100px;
+        max-height: 100px;
+        border-radius: 1rem;
+        box-shadow: 0 2px 12px rgba(79,140,255,0.10);
+        object-fit: cover;
+    }
+</style>
+
+<div class="container py-4">
     <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header">
-                    <h3>📦 Mahsulot qo'shish / Partiya qo'shish</h3>
-                    <p class="text-muted mb-0">Yangi mahsulot yaratish yoki mavjud mahsulotga yangi partiya qo'shish</p>
+        <div class="col-lg-7 col-md-10">
+            <div class="card shadow rounded-4 border-0">
+                <div class="card-header bg-primary bg-gradient text-white rounded-top-4">
+                    <h3 class="mb-0">
+                        <i class="bi bi-box-seam me-2"></i> Mahsulot / Partiya qo'shish
+                    </h3>
+                    <div class="small text-light">Yangi mahsulot yoki mavjud mahsulotga partiya qo‘shing</div>
                 </div>
-                <div class="card-body">
-                    <form method="post" enctype="multipart/form-data">
+                <div class="card-body p-4">
+                    <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
                         {% csrf_token %}
-
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="barcode" class="form-label">Shtrix kod *</label>
-                                    <input type="text" class="form-control" id="barcode" name="barcode" required>
-                                    <div class="form-text">Agar mavjud mahsulot shtrix kodi kiritilsa, yangi partiya qo'shiladi</div>
-                                </div>
+                        <!-- Barcode -->
+                        <div class="field-card">
+                            <div class="field-label">
+                                <i class="bi bi-upc-scan field-icon"></i> Shtrix kod <span class="text-danger">*</span>
                             </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="name" class="form-label">Mahsulot nomi *</label>
-                                    <input type="text" class="form-control" id="name" name="name" required>
+                            <input type="text" class="form-control" id="barcode" name="barcode" required autocomplete="off">
+                            <div class="field-desc">Mavjud mahsulot shtrix kodi bo‘lsa, yangi partiya qo‘shiladi</div>
+                            <div class="invalid-feedback">Shtrix kodni kiriting</div>
+                        </div>
+                        <!-- Name -->
+                        <div class="field-card">
+                            <div class="field-label">
+                                <i class="bi bi-type field-icon"></i> Mahsulot nomi <span class="text-danger">*</span>
+                            </div>
+                            <input type="text" class="form-control" id="name" name="name" required autocomplete="off">
+                            <div class="invalid-feedback">Mahsulot nomini kiriting</div>
+                        </div>
+                        <!-- Category -->
+                        <div class="field-card">
+                            <div class="field-label">
+                                <i class="bi bi-tags field-icon"></i> Kategoriya <span class="text-danger">*</span>
+                            </div>
+                            <select class="form-select" id="category" name="category" required>
+                                <option value="">Kategoriyani tanlang...</option>
+                                {% for category in categories %}
+                                    <option value="{{ category.id }}">{{ category.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="invalid-feedback">Kategoriya tanlanishi shart</div>
+                        </div>
+                        <!-- Unit -->
+                        <div class="field-card">
+                            <div class="field-label">
+                                <i class="bi bi-archive field-icon"></i> O‘lchov birligi <span class="text-danger">*</span>
+                            </div>
+                            <select class="form-select" id="unit" name="unit" required>
+                                <option value="">Tanlang...</option>
+                                <option value="piece">Dona</option>
+                                <option value="kg">Kilogram</option>
+                                <option value="liter">Litr</option>
+                                <option value="meter">Metr</option>
+                            </select>
+                            <div class="invalid-feedback">O‘lchov birligi tanlanishi shart</div>
+                        </div>
+                        <!-- Image -->
+                        <div class="field-card">
+                            <div class="field-label">
+                                <i class="bi bi-image field-icon"></i> Mahsulot rasmi <span class="text-muted">(ixtiyoriy)</span>
+                            </div>
+                            <div class="row g-2 align-items-center">
+                                <div class="col-8">
+                                    <input type="file" class="form-control" id="image" name="image" accept="image/*" onchange="previewImage(event)">
+                                    <div class="field-desc">JPG, PNG, GIF yuklash mumkin</div>
                                 </div>
                             </div>
                         </div>
+                        <hr class="my-4">
 
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="category" class="form-label">Kategoriya *</label>
-                                    <select class="form-select" id="category" name="category" required>
-                                        <option value="">Kategoriyani tanlang</option>
-                                        {% for category in categories %}
-                                            <option value="{{ category.id }}">{{ category.name }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
+                        <span class="badge bg-secondary mb-2 px-3 py-2 fs-6">
+                            <i class="bi bi-clipboard-data"></i> Partiya ma'lumotlari
+                        </span>
+                        <!-- Purchase price -->
+                        <div class="field-card">
+                            <div class="field-label">
+                                <i class="bi bi-cash-stack field-icon"></i> Sotib olish narxi <span class="text-danger">*</span>
                             </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="unit" class="form-label">O'lchov birligi *</label>
-                                    <select class="form-select" id="unit" name="unit" required>
-                                        <option value="piece">Dona</option>
-                                        <option value="kg">Kilogram</option>
-                                        <option value="liter">Litr</option>
-                                        <option value="meter">Metr</option>
-                                    </select>
-                                </div>
+                            <input type="number" class="form-control" id="purchase_price" name="purchase_price" step="0.01" required>
+                            <div class="invalid-feedback">Sotib olish narxini kiriting</div>
+                        </div>
+                        <!-- Selling price -->
+                        <div class="field-card">
+                            <div class="field-label">
+                                <i class="bi bi-currency-dollar field-icon"></i> Sotuv narxi <span class="text-danger">*</span>
                             </div>
+                            <input type="number" class="form-control" id="selling_price" name="selling_price" step="0.01" required>
+                            <div class="invalid-feedback">Sotuv narxini kiriting</div>
+                        </div>
+                        <!-- Quantity -->
+                        <div class="field-card">
+                            <div class="field-label">
+                                <i class="bi bi-123 field-icon"></i> Miqdor <span class="text-danger">*</span>
+                            </div>
+                            <input type="number" class="form-control" id="stock_quantity" name="stock_quantity" required>
+                            <div class="invalid-feedback">Miqdorni kiriting</div>
+                        </div>
+                        <!-- Arrival date -->
+                        <div class="field-card">
+                            <div class="field-label">
+                                <i class="bi bi-calendar2-plus field-icon"></i> Kelgan sana <span class="text-danger">*</span>
+                            </div>
+                            <input type="date" class="form-control" id="arrival_date" name="arrival_date" required>
+                            <div class="invalid-feedback">Kelgan sanani kiriting</div>
+                        </div>
+                        <!-- Expiry date -->
+                        <div class="field-card">
+                            <div class="field-label">
+                                <i class="bi bi-calendar2-x field-icon"></i> Yaroqlilik muddati <span class="text-danger">*</span>
+                            </div>
+                            <input type="date" class="form-control" id="expiry_date" name="expiry_date" required>
+                            <div class="invalid-feedback">Yaroqlilik muddatini kiriting</div>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="image" class="form-label">Mahsulot rasmi (ixtiyoriy)</label>
-                            <input type="file" class="form-control" id="image" name="image" accept="image/*">
-                            <div class="form-text">JPG, PNG, GIF formatlarida rasm yuklash mumkin</div>
-                        </div>
-
-                        <hr>
-                        <h5>📋 Partiya ma'lumotlari</h5>
-
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="purchase_price" class="form-label">Sotib olish narxi *</label>
-                                    <input type="number" class="form-control" id="purchase_price" name="purchase_price" step="0.01" required>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="selling_price" class="form-label">Sotuv narxi *</label>
-                                    <input type="number" class="form-control" id="selling_price" name="selling_price" step="0.01" required>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-4">
-                                <div class="mb-3">
-                                    <label for="stock_quantity" class="form-label">Miqdor *</label>
-                                    <input type="number" class="form-control" id="stock_quantity" name="stock_quantity" required>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="mb-3">
-                                    <label for="arrival_date" class="form-label">Kelgan sana *</label>
-                                    <input type="date" class="form-control" id="arrival_date" name="arrival_date" required>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="mb-3">
-                                    <label for="expiry_date" class="form-label">Yaroqlilik muddati *</label>
-                                    <input type="date" class="form-control" id="expiry_date" name="expiry_date" required>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="d-flex justify-content-between">
-                            <a href="{% url 'product_list' %}" class="btn btn-secondary">
-                                ← Orqaga
+                        <!-- Sticky Actions -->
+                        <div class="d-flex justify-content-between gap-2 mt-4 position-sticky bottom-0 bg-white py-2" style="z-index:100;">
+                            <a href="{% url 'product_list' %}" class="btn btn-outline-secondary rounded-pill px-4">
+                                <i class="bi bi-arrow-left"></i> Orqaga
                             </a>
-                            <button type="submit" class="btn btn-primary">
-                                💾 Saqlash
+                            <button type="submit" class="btn btn-primary rounded-pill px-5">
+                                <i class="bi bi-save2"></i> Saqlash
                             </button>
                         </div>
                     </form>
@@ -117,15 +177,36 @@
 </div>
 
 <script>
-// Bugungi sanani default qilish
+(function () {
+    'use strict'
+    const forms = document.querySelectorAll('.needs-validation')
+    Array.from(forms).forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+                event.preventDefault()
+                event.stopPropagation()
+            }
+            form.classList.add('was-validated')
+        }, false)
+    })
+})();
 document.addEventListener('DOMContentLoaded', function() {
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('arrival_date').value = today;
-
-    // Yaroqlilik muddatini 1 yil keyingi qilish
     const nextYear = new Date();
     nextYear.setFullYear(nextYear.getFullYear() + 1);
     document.getElementById('expiry_date').value = nextYear.toISOString().split('T')[0];
 });
+function previewImage(event) {
+    const img = document.getElementById('imgPreview');
+    const [file] = event.target.files;
+    if (file) {
+        img.src = URL.createObjectURL(file);
+    } else {
+        img.src = 'https://placehold.co/90x90?text=Rasm';
+    }
+}
 </script>
+<!-- Bootstrap Icons CDN -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 {% endblock %}
