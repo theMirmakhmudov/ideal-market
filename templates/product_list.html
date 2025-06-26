@@ -13,22 +13,17 @@
 
 <div class="card">
     <form method="get" style="display: flex; gap: 1rem; margin-bottom: 2rem;">
-        <input type="text" name="search" placeholder="Mahsulot nomi yoki shtrix kod..." 
-               value="{{ search_query }}" class="form-control" style="flex: 1;">
-        
+        <input type="text" name="search" placeholder="Mahsulot nomi yoki shtrix kod..." class="form-control" style="flex: 1;">
         <select name="category" class="form-control" style="width: 200px;">
             <option value="">Barcha kategoriyalar</option>
             {% for category in categories %}
-                <option value="{{ category.id }}" {% if selected_category == category.id|stringformat:"s" %}selected{% endif %}>
-                    {{ category.name }}
-                </option>
+                <option value="{{ category.id }}" {% if selected_category == category.id|stringformat:"s" %}selected{% endif %}>{{ category.name }}</option>
             {% endfor %}
         </select>
-        
         <button type="submit" class="btn btn-primary">Qidirish</button>
     </form>
 
-    <table class="table">
+    <table class="table table-striped">
         <thead>
             <tr>
                 <th>Shtrix kod</th>
@@ -42,37 +37,54 @@
             </tr>
         </thead>
         <tbody>
-            {% for product in products %}
-            <tr {% if product.is_expired %}style="background-color: #ffebee;"{% elif product.stock_quantity < 10 %}style="background-color: #fff3e0;"{% endif %}>
-                <td>{{ product.barcode }}</td>
-                <td>{{ product.name }}</td>
-                <td>{{ product.category.name }}</td>
-                <td>{{ product.purchase_price|floatformat:0 }} so'm</td>
-                <td>{{ product.selling_price|floatformat:0 }} so'm</td>
+            {% for row in products_data %}
+            <tr {% if row.nearest_batch and row.nearest_batch.expiry_date < today %}style="background-color: #ffebee;"{% elif row.total_stock < 10 and row.total_stock > 0 %}style="background-color: #fff9e5;"{% endif %}>
+                <td>{{ row.product.barcode }}</td>
+                <td>{{ row.product.name }}</td>
+                <td>{{ row.product.category.name }}</td>
                 <td>
-                    {{ product.stock_quantity }} {{ product.get_unit_display }}
-                    {% if product.stock_quantity < 10 %}
+                    {% if row.latest_batch %}
+                        {{ row.latest_batch.purchase_price|floatformat:0 }} so'm
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td>
+                    {% if row.latest_batch %}
+                        {{ row.latest_batch.selling_price|floatformat:0 }} so'm
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td>
+                    {{ row.total_stock }} {{ row.product.get_unit_display }}
+                    {% if row.total_stock < 10 and row.total_stock > 0 %}
                         <span style="color: #f39c12;">⚠️</span>
                     {% endif %}
                 </td>
                 <td>
-                    {{ product.expiry_date }}
-                    {% if product.is_expired %}
-                        <span style="color: #e74c3c;">❌</span>
+                    {% if row.nearest_batch %}
+                        {{ row.nearest_batch.expiry_date }}
+                        {% if row.nearest_batch.expiry_date < today %}
+                            <span style="color: #e74c3c;">❌</span>
+                        {% endif %}
+                    {% else %}
+                        -
                     {% endif %}
                 </td>
                 <td>
-                    <a href="{% url 'edit_product' product.id %}" class="btn btn-warning" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">Tahrirlash</a>
-                    <form method="post" action="{% url 'delete_product' product.id %}" style="display: inline;" 
-                          onsubmit="return confirm('Rostdan ham o\'chirmoqchimisiz?')">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-danger" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">O'chirish</button>
-                    </form>
+                    <div style="display: flex; gap: 6px; align-items:center;">
+                        <a href="{% url 'edit_product' row.product.id %}" class="btn btn-warning btn-sm" style="font-size: 0.95rem; padding:0.25em 0.5em;" title="Tahrirlash">✏️</a>
+                        <form method="post" action="{% url 'delete_product' row.product.id %}" style="display:inline;" onsubmit="return confirm('Rostdan ham o\'chirmoqchimisiz?')">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger btn-sm" style="font-size: 0.95rem; padding:0.25em 0.5em;" title="O'chirish">🗑</button>
+                        </form>
+                    </div>
                 </td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="8" style="text-align: center; color: #666;">Mahsulot topilmadi</td>
+                <td colspan="8" style="text-align:center; color:#888;">Mahsulot topilmadi</td>
             </tr>
             {% endfor %}
         </tbody>

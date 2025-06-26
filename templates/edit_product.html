@@ -6,22 +6,21 @@
 <h1>✏️ Mahsulot tahrirlash</h1>
 
 <div class="card">
-    <form method="post">
+    <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
         <div class="grid grid-2">
+            <!-- Product fields -->
             <div class="form-group">
                 <label for="barcode">Shtrix kod:</label>
                 <input type="text" id="barcode" name="barcode" value="{{ product.barcode }}" class="form-control" required>
             </div>
-            
             <div class="form-group">
                 <label for="name">Mahsulot nomi:</label>
                 <input type="text" id="name" name="name" value="{{ product.name }}" class="form-control" required>
             </div>
-            
             <div class="form-group">
                 <label for="category">Kategoriya:</label>
-                <select id="category" name="category" class="form-control" required>
+                <select name="category" class="form-control">
                     {% for category in categories %}
                         <option value="{{ category.id }}" {% if category.id == product.category.id %}selected{% endif %}>
                             {{ category.name }}
@@ -29,45 +28,49 @@
                     {% endfor %}
                 </select>
             </div>
-            
             <div class="form-group">
-                <label for="unit">O'lchov birligi:</label>
-                <select id="unit" name="unit" class="form-control" required>
-                    <option value="dona" {% if product.unit == 'dona' %}selected{% endif %}>Dona</option>
-                    <option value="kg" {% if product.unit == 'kg' %}selected{% endif %}>Kilogram</option>
-                    <option value="litr" {% if product.unit == 'litr' %}selected{% endif %}>Litr</option>
-                    <option value="metr" {% if product.unit == 'metr' %}selected{% endif %}>Metr</option>
+                <label for="unit">Birligi:</label>
+                <select name="unit" id="unit" class="form-control">
+                    <option value="piece" {% if product.unit == "piece" %}selected{% endif %}>Dona</option>
+                    <option value="kg" {% if product.unit == "kg" %}selected{% endif %}>Kg</option>
+                    <option value="liter" {% if product.unit == "liter" %}selected{% endif %}>Litr</option>
                 </select>
             </div>
-            
+            <div class="form-group" style="grid-column: span 2;">
+                <label for="image">Mahsulot rasmi:</label>
+                <input type="file" id="image" name="image" class="form-control">
+                {% if product.image_url %}
+                    <img src="{{ product.image_url }}" alt="Rasm" style="width:80px; margin-top:10px;">
+                {% endif %}
+            </div>
+
+            <!-- Batch fields -->
             <div class="form-group">
                 <label for="purchase_price">Olingan narxi (so'm):</label>
-                <input type="number" id="purchase_price" name="purchase_price" value="{{ product.purchase_price }}" step="0.01" class="form-control" required>
+                <input type="number" id="purchase_price" name="purchase_price"
+                    value="{{ batch.purchase_price|default_if_none:'' }}" step="0.01" class="form-control" required>
             </div>
-            
             <div class="form-group">
                 <label for="selling_price">Sotish narxi (so'm):</label>
-                <input type="number" id="selling_price" name="selling_price" value="{{ product.selling_price }}" step="0.01" class="form-control" required>
+                <input type="number" id="selling_price" name="selling_price"
+                    value="{{ batch.selling_price|default_if_none:'' }}" step="0.01" class="form-control" required>
             </div>
-            
             <div class="form-group">
                 <label for="stock_quantity">Miqdori:</label>
-                <input type="number" id="stock_quantity" name="stock_quantity" value="{{ product.stock_quantity }}" class="form-control" required>
+                <input type="number" id="stock_quantity" name="stock_quantity"
+                    value="{{ batch.remaining_quantity|default_if_none:'' }}" class="form-control" required>
             </div>
-            
             <div class="form-group">
                 <label for="arrival_date">Do'konga kelgan vaqti:</label>
-                <input type="datetime-local" id="arrival_date" name="arrival_date" 
-                       value="{{ product.arrival_date|date:'Y-m-d\TH:i' }}" class="form-control" required>
+                <input type="date" id="arrival_date" name="arrival_date"
+                    value="{{ batch.arrival_date|date:'Y-m-d' }}" class="form-control" required>
             </div>
-            
             <div class="form-group" style="grid-column: span 2;">
                 <label for="expiry_date">Yaroqlilik muddati:</label>
-                <input type="date" id="expiry_date" name="expiry_date" 
-                       value="{{ product.expiry_date|date:'Y-m-d' }}" class="form-control" required>
+                <input type="date" id="expiry_date" name="expiry_date"
+                    value="{{ batch.expiry_date|date:'Y-m-d' }}" class="form-control" required>
             </div>
         </div>
-        
         <div style="margin-top: 2rem;">
             <button type="submit" class="btn btn-success">Saqlash</button>
             <a href="{% url 'product_list' %}" class="btn btn-primary">Bekor qilish</a>
